@@ -79,24 +79,20 @@ class Database {
 
   /**
    * Automatikusan kalkulálja az optimális Swiss fordulók számát
-   * 10 csapat → 4 forduló
-   * 8 csapat → 3 forduló
-   * 6 csapat → 3 forduló
+   * MINDIG 4 forduló, függetlenül a csapatok számától
    */
   private recalculateSwissRounds(): void {
     const teamCount = this.teams.size;
 
-    if (teamCount >= 10) {
-      this.config.swissRounds = 4;
-      this.config.knockoutSize = 4;
-    } else if (teamCount >= 8) {
-      this.config.swissRounds = 3;
-      this.config.knockoutSize = 4;
-    } else if (teamCount >= 6) {
-      this.config.swissRounds = 3;
+    // Mindig 4 Swiss forduló
+    this.config.swissRounds = 4;
+
+    // Knockout méret a csapatok számától függ
+    if (teamCount >= 8) {
+      this.config.knockoutSize = 8;
+    } else if (teamCount >= 4) {
       this.config.knockoutSize = 4;
     } else {
-      this.config.swissRounds = Math.max(2, Math.floor(teamCount / 2));
       this.config.knockoutSize = Math.min(4, teamCount);
     }
   }

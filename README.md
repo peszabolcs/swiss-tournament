@@ -60,15 +60,16 @@ Frontend futni fog: `http://localhost:5173`
 
 ### 1. Csapatok hozzáadása
 - Nyisd meg az **Admin** oldalt
-- Adj hozzá legalább 6-10 csapatot
-- A rendszer automatikusan kiszámítja az optimális forduló számot
+- Adj hozzá csapatokat (minimum 4, ajánlott 6-10)
+- A rendszer automatikusan **4 Swiss fordulót** állít be minden esetben
 
 ### 2. Swiss Szakasz
 1. Menj a **Swiss Phase** oldalra
 2. Kattints a **"Generate Next Round"** gombra
 3. Rögzítsd a meccseredményeket (pl. 16-14)
 4. Kattints a **"Save"** gombra minden meccshez
-5. Ismételd 4 fordulón keresztül
+5. Ismételd **mind a 4 fordulón keresztül**
+6. Ha páratlan a csapatok száma, automatikusan generálódik BYE meccs (16-10)
 
 ### 3. Knockout Szakasz
 1. A Swiss szakasz befejezése után menj a **Knockout** oldalra
@@ -111,11 +112,15 @@ Frontend futni fog: `http://localhost:5173`
 
 A rendszer automatikusan alkalmazkodik a csapatok számához:
 
-| Csapatok | Swiss fordulók | Knockout méret |
-|----------|---------------|----------------|
-| 10+      | 4 forduló     | Top 4          |
-| 8-9      | 3 forduló     | Top 4          |
-| 6-7      | 3 forduló     | Top 4          |
+| Csapatok | Swiss fordulók | Knockout méret | BYE meccs pontszám |
+|----------|---------------|----------------|-------------------|
+| 8+       | 4 forduló     | Top 8          | 16-10 (max 6 pont) |
+| 4-7      | 4 forduló     | Top 4          | 16-10 (max 6 pont) |
+| <4       | 4 forduló     | Összes csapat  | 16-10 (max 6 pont) |
+
+**Fontos szabályok:**
+- Minden csapat **mindig 4 Swiss fordulót** játszik, függetlenül a létszámtól
+- BYE (páratlan csapatszám esetén) **maximum 6 pontot** ér (16-10), nem 16 pontot
 
 ## 📝 Fejlesztési lehetőségek
 

@@ -131,14 +131,14 @@ export class SwissService {
         paired.add(teamB.id);
       } else {
         // Ha nem találtunk ellenfelet, "bye" kiosztása
-        // (automatikus győzelem 16-0 ponttal)
+        // (automatikus győzelem 16-10 ponttal = 6 pont különbség)
         const byeMatch: Match = {
           id: uuidv4(),
           round,
           teamAId: teamA.id,
           teamBId: 'BYE',
           scoreA: 16,
-          scoreB: 0,
+          scoreB: 10,
           winnerId: teamA.id,
           status: 'completed',
           phase: 'swiss'
@@ -148,7 +148,7 @@ export class SwissService {
         paired.add(teamA.id);
 
         // Frissíti a csapat statisztikáit
-        this.updateTeamAfterMatch(teamA.id, 16, 0, true);
+        this.updateTeamAfterMatch(teamA.id, 16, 10, true);
       }
     }
 
@@ -162,14 +162,14 @@ export class SwissService {
         teamAId: teamA.id,
         teamBId: 'BYE',
         scoreA: 16,
-        scoreB: 0,
+        scoreB: 10,
         winnerId: teamA.id,
         status: 'completed',
         phase: 'swiss'
       };
 
       matches.push(byeMatch);
-      this.updateTeamAfterMatch(teamA.id, 16, 0, true);
+      this.updateTeamAfterMatch(teamA.id, 16, 10, true);
     }
 
     return matches;

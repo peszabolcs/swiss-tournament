@@ -18,6 +18,7 @@ export interface Match {
   winnerId: string | null;
   status: 'pending' | 'completed';
   phase: 'swiss' | 'knockout';
+  map: string;
   teamA?: Team;
   teamB?: Team | { id: string; name: string };
 }
@@ -40,6 +41,7 @@ export interface BracketMatch {
   scoreB: number | null;
   status: 'pending' | 'completed';
   position: number;
+  map: string;
   teamA?: Team | null;
   teamB?: Team | null;
 }

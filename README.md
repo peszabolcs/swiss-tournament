@@ -5,6 +5,7 @@ Teljes stack webalkalmazás Counter-Strike 2 amatőr esport bajnokságok kezelé
 ## 🎯 Funkciók
 
 - **Swiss rendszerű sorsolás**: Automatikus párosítás 4 fordulón keresztül
+- **Random map választás**: Minden meccshez automatikus CS2 map (Ancient, Dust2, Inferno, Mirage, Nuke, Overpass, Train)
 - **Knockout (egyenes kieséses) szakasz**: Top 4/8 csapat továbbjutása
 - **Élő eredménykezelés**: Meccspontok rögzítése (pl. 16-10)
 - **Ranglista számítás**: Buchholz tie-breaker támogatással

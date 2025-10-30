@@ -121,6 +121,14 @@ export default function SwissPhase() {
         <div className="grid grid-cols-1 gap-4">
           {matches.map((match) => (
             <div key={match.id} className="card">
+              {/* Map Info */}
+              <div className="mb-3 pb-3 border-b border-dark-border">
+                <div className="flex items-center justify-center">
+                  <span className="text-xs text-gray-500 uppercase mr-2">Map:</span>
+                  <span className="text-sm font-bold text-neon-pink">{match.map}</span>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 {/* Team A */}
                 <div className="flex-1">

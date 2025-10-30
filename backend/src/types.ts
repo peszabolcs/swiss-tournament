@@ -24,6 +24,7 @@ export interface Match {
   winnerId: string | null;   // Győztes csapat ID
   status: 'pending' | 'completed';
   phase: 'swiss' | 'knockout';
+  map: string;               // CS2 map (Ancient, Dust2, Inferno, Mirage, Nuke, Overpass, Train)
 }
 
 /**
@@ -50,6 +51,7 @@ export interface BracketMatch {
   scoreB: number | null;
   status: 'pending' | 'completed';
   position: number;          // Pozíció a bracket-ben
+  map: string;               // CS2 map
 }
 
 /**

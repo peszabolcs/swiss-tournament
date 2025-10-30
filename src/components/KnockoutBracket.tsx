@@ -190,6 +190,12 @@ interface BracketMatchCardProps {
 function BracketMatchCard({ match, scores, onScoreChange, onSubmit }: BracketMatchCardProps) {
   return (
     <div className="card">
+      {/* Map Info */}
+      <div className="mb-3 pb-3 border-b border-dark-border text-center">
+        <span className="text-xs text-gray-500 uppercase mr-2">Map:</span>
+        <span className="text-sm font-bold text-neon-pink">{match.map}</span>
+      </div>
+
       {/* Team A */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex-1">

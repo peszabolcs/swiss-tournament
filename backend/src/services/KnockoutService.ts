@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Match, BracketMatch } from '../types.js';
 import { db } from '../models/Database.js';
 import { swissService } from './SwissService.js';
+import { getRandomMap } from '../utils/mapPool.js';
 
 /**
  * Knockout (egyenes kieséses) rendszer szolgáltatás
@@ -81,7 +82,8 @@ export class KnockoutService {
         scoreB: null,
         winnerId: null,
         status: 'pending',
-        phase: 'knockout'
+        phase: 'knockout',
+        map: match.map
       };
       db.addMatch(dbMatch);
     });
@@ -108,7 +110,8 @@ export class KnockoutService {
       scoreA: null,
       scoreB: null,
       status: 'pending',
-      position: roundNumber // A position mezőt használjuk round number tárolására
+      position: roundNumber, // A position mezőt használjuk round number tárolására
+      map: getRandomMap()
     };
   }
 
@@ -177,7 +180,8 @@ export class KnockoutService {
           scoreB: null,
           winnerId: null,
           status: 'pending',
-          phase: 'knockout'
+          phase: 'knockout',
+          map: getRandomMap()
         });
       }
     }
@@ -200,7 +204,8 @@ export class KnockoutService {
       scoreA: match.scoreA,
       scoreB: match.scoreB,
       status: match.status,
-      position: index // Pozíció a listában
+      position: index, // Pozíció a listában
+      map: match.map
     }));
   }
 

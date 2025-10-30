@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Team, Match } from '../types.js';
 import { db } from '../models/Database.js';
+import { getRandomMap } from '../utils/mapPool.js';
 
 /**
  * Swiss rendszerű párosítási szolgáltatás
@@ -124,7 +125,8 @@ export class SwissService {
           scoreB: null,
           winnerId: null,
           status: 'pending',
-          phase: 'swiss'
+          phase: 'swiss',
+          map: getRandomMap()
         });
 
         paired.add(teamA.id);
@@ -141,7 +143,8 @@ export class SwissService {
           scoreB: 10,
           winnerId: teamA.id,
           status: 'completed',
-          phase: 'swiss'
+          phase: 'swiss',
+          map: 'BYE (No Map)'
         };
 
         matches.push(byeMatch);
@@ -165,7 +168,8 @@ export class SwissService {
         scoreB: 10,
         winnerId: teamA.id,
         status: 'completed',
-        phase: 'swiss'
+        phase: 'swiss',
+        map: 'BYE (No Map)'
       };
 
       matches.push(byeMatch);

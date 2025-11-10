@@ -4,33 +4,44 @@ import { db } from '../models/Database.js';
 import { getRandomMap } from '../utils/mapPool.js';
 
 /**
- * Swiss rendszerű párosítási szolgáltatás
+ * Körmérkőzéses (Round-Robin) párosítási szolgáltatás
+ * Mindenki mindenki ellen játszik egyszer
  */
 export class SwissService {
   /**
-   * Új Swiss forduló generálása
+   * Új körmérkőzéses forduló generálása
    *
-   * Szabályok:
-   * - Azonos pontszámú csapatok kerülnek párosításra
-   * - Két csapat nem játszhat egymással kétszer
-   * - Ha páratlan számú csapat van, egy "bye" kerül kiosztásra (automatikus győzelem)
+   * Körmérkőzéses rendszer:
+   * - Minden csapat minden másik csapattal pontosan egyszer játszik
+   * - Az összes mérkőzés előre meghatározott (round-robin párosítás)
+   * - Nincs "bye" - ha páratlan számú csapat van, egy csapat kimarad az adott körből
    */
   generateRound(): Match[] {
     const config = db.getConfig();
     const currentRound = config.currentRound + 1;
 
-    // Csapatok lekérése és rendezése pontszám alapján
-    const teams = this.getSortedTeams();
+    // Csapatok lekérése
+    const teams = db.getAllTeams();
 
     if (teams.length === 0) {
       throw new Error('No teams available for pairing');
     }
 
-    // Párosítás generálása
-    const matches = this.pairTeams(teams, currentRound);
+    if (teams.length < 2) {
+      throw new Error('At least 2 teams are required for a tournament');
+    }
 
-    // Meccsek mentése
-    matches.forEach(match => db.addMatch(match));
+    // Ha ez az első kör, generáljuk az összes körmérkőzést
+    if (currentRound === 1) {
+      this.generateAllRounds(teams);
+    }
+
+    // Aktuális kör mérkőzéseinek lekérése
+    const matches = db.getMatchesByRound(currentRound);
+
+    if (matches.length === 0) {
+      throw new Error('No matches found for this round');
+    }
 
     // Config frissítése
     db.updateConfig({ currentRound });
@@ -39,20 +50,80 @@ export class SwissService {
   }
 
   /**
+   * Az összes körmérkőzés előre generálása Round-Robin algoritmussal
+   *
+   * Round-Robin Scheduling Algorithm:
+   * - n csapat esetén n-1 forduló kell (ha n páros) vagy n forduló (ha n páratlan)
+   * - Minden csapat minden másik csapattal pontosan egyszer játszik
+   * - Páratlan csapat esetén minden körben egy csapat kimarad
+   */
+  private generateAllRounds(teams: Team[]): void {
+    const n = teams.length;
+    const totalRounds = n % 2 === 0 ? n - 1 : n;
+
+    // Csapatok tömbje - ha páratlan, hozzáadunk egy "bye" csapatot
+    const teamList: (Team | null)[] = [...teams];
+    if (n % 2 === 1) {
+      teamList.push(null); // "bye" reprezentáció
+    }
+
+    const numTeams = teamList.length;
+
+    // Round-Robin algoritmus: forgó asztal módszer
+    for (let round = 1; round <= totalRounds; round++) {
+      const roundMatches: Match[] = [];
+
+      // Párosítások az aktuális körben
+      for (let i = 0; i < numTeams / 2; i++) {
+        const teamA = teamList[i];
+        const teamB = teamList[numTeams - 1 - i];
+
+        // Ha mindkét csapat létezik (nem "bye")
+        if (teamA && teamB) {
+          roundMatches.push({
+            id: uuidv4(),
+            round,
+            teamAId: teamA.id,
+            teamBId: teamB.id,
+            scoreA: null,
+            scoreB: null,
+            winnerId: null,
+            status: 'pending',
+            phase: 'swiss',
+            map: getRandomMap()
+          });
+        }
+      }
+
+      // Meccsek mentése az adatbázisba
+      roundMatches.forEach(match => db.addMatch(match));
+
+      // Csapatok forgatása (az első csapat fix marad, a többi forog)
+      if (round < totalRounds) {
+        const fixed = teamList[0];
+        const rotating = teamList.slice(1);
+        rotating.unshift(rotating.pop()!);
+        teamList[0] = fixed;
+        for (let i = 0; i < rotating.length; i++) {
+          teamList[i + 1] = rotating[i];
+        }
+      }
+    }
+
+    // Frissítjük a config-ot, hogy tudjuk hány kör lesz összesen
+    db.updateConfig({ swissRounds: totalRounds });
+  }
+
+  /**
    * Csapatok rendezése pontszám alapján (ranglista)
    *
    * Sorrend:
    * 1. Győzelmek száma
    * 2. Round különbség (pontszámok különbsége)
-   * 3. Buchholz score (ellenfelek összesített pontszáma)
+   * 3. Összes megszerzett pont (Goals For / totalScored)
    */
   private getSortedTeams(): Team[] {
     const teams = db.getAllTeams();
-
-    // Buchholz score kalkulálása minden csapathoz
-    teams.forEach(team => {
-      team.buchholzScore = this.calculateBuchholz(team);
-    });
 
     return teams.sort((a, b) => {
       // 1. Győzelmek
@@ -63,120 +134,9 @@ export class SwissService {
       if (b.totalPoints !== a.totalPoints) {
         return b.totalPoints - a.totalPoints;
       }
-      // 3. Buchholz
-      return (b.buchholzScore || 0) - (a.buchholzScore || 0);
+      // 3. Összes megszerzett pont (Goals For)
+      return b.totalScored - a.totalScored;
     });
-  }
-
-  /**
-   * Buchholz score: az ellenfelek összesített GYŐZELMEINEK száma
-   * (Tie-breaker metric - nem a round diff, hanem a match wins!)
-   */
-  private calculateBuchholz(team: Team): number {
-    let score = 0;
-    team.matchHistory.forEach(opponentId => {
-      const opponent = db.getTeam(opponentId);
-      if (opponent) {
-        score += opponent.totalWins;
-      }
-    });
-    return score;
-  }
-
-  /**
-   * Csapatok párosítása Swiss algoritmus alapján
-   */
-  private pairTeams(teams: Team[], round: number): Match[] {
-    const matches: Match[] = [];
-    const paired = new Set<string>();
-
-    // Másolat készítése, hogy ne módosítsuk az eredetit
-    const availableTeams = [...teams];
-
-    while (availableTeams.length > 1) {
-      const teamA = availableTeams.shift()!;
-
-      if (paired.has(teamA.id)) continue;
-
-      // Keres egy megfelelő ellenfelet
-      let teamBIndex = -1;
-      for (let i = 0; i < availableTeams.length; i++) {
-        const teamB = availableTeams[i];
-
-        if (paired.has(teamB.id)) continue;
-
-        // Ellenőrzi, hogy játszottak-e már egymással
-        if (!teamA.matchHistory.includes(teamB.id)) {
-          teamBIndex = i;
-          break;
-        }
-      }
-
-      // Ha találtunk ellenfelet
-      if (teamBIndex >= 0) {
-        const teamB = availableTeams.splice(teamBIndex, 1)[0];
-
-        matches.push({
-          id: uuidv4(),
-          round,
-          teamAId: teamA.id,
-          teamBId: teamB.id,
-          scoreA: null,
-          scoreB: null,
-          winnerId: null,
-          status: 'pending',
-          phase: 'swiss',
-          map: getRandomMap()
-        });
-
-        paired.add(teamA.id);
-        paired.add(teamB.id);
-      } else {
-        // Ha nem találtunk ellenfelet, "bye" kiosztása
-        // (automatikus győzelem 16-10 ponttal = 6 pont különbség)
-        const byeMatch: Match = {
-          id: uuidv4(),
-          round,
-          teamAId: teamA.id,
-          teamBId: 'BYE',
-          scoreA: 16,
-          scoreB: 10,
-          winnerId: teamA.id,
-          status: 'completed',
-          phase: 'swiss',
-          map: 'BYE (No Map)'
-        };
-
-        matches.push(byeMatch);
-        paired.add(teamA.id);
-
-        // Frissíti a csapat statisztikáit
-        this.updateTeamAfterMatch(teamA.id, 16, 10, true);
-      }
-    }
-
-    // Ha maradt páratlan csapat (bye)
-    if (availableTeams.length === 1) {
-      const teamA = availableTeams[0];
-
-      const byeMatch: Match = {
-        id: uuidv4(),
-        round,
-        teamAId: teamA.id,
-        teamBId: 'BYE',
-        scoreA: 16,
-        scoreB: 10,
-        winnerId: teamA.id,
-        status: 'completed',
-        phase: 'swiss',
-        map: 'BYE (No Map)'
-      };
-
-      matches.push(byeMatch);
-      this.updateTeamAfterMatch(teamA.id, 16, 10, true);
-    }
-
-    return matches;
   }
 
   /**
@@ -195,6 +155,7 @@ export class SwissService {
 
     db.updateTeam(teamId, {
       totalPoints: team.totalPoints + roundDiff,
+      totalScored: team.totalScored + scoreFor,  // Összes megszerzett pont
       totalWins: won ? team.totalWins + 1 : team.totalWins,
       totalLosses: !won ? team.totalLosses + 1 : team.totalLosses
     });
@@ -265,21 +226,21 @@ export class SwissService {
       team,
       matchWins: team.totalWins,
       roundDifference: team.totalPoints,
-      buchholzScore: team.buchholzScore || 0
+      buchholzScore: team.totalScored  // Goals For (összes megszerzett pont)
     }));
   }
 
   /**
-   * Ellenőrzi, hogy az összes Swiss forduló befejeződött-e
+   * Ellenőrzi, hogy az összes körmérkőzés befejeződött-e
    */
-  isSwissPhaseComplete(): boolean {
+  isTournamentComplete(): boolean {
     const config = db.getConfig();
-    const swissMatches = db.getMatchesByPhase('swiss');
-    const completedMatches = swissMatches.filter(m => m.status === 'completed');
+    const allMatches = db.getAllMatches();
+    const completedMatches = allMatches.filter(m => m.status === 'completed');
 
     return (
       config.currentRound >= config.swissRounds &&
-      completedMatches.length === swissMatches.length
+      completedMatches.length === allMatches.length
     );
   }
 }

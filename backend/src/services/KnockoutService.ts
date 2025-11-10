@@ -12,34 +12,10 @@ export class KnockoutService {
    * Knockout bracket generálása a Swiss szakasz után
    *
    * A top N csapat kerül be (4, 8, vagy 16)
+   * DEPRECATED: Knockout fázis már nem használt körmérkőzéses rendszerben
    */
   generateBracket(): BracketMatch[] {
-    if (!swissService.isSwissPhaseComplete()) {
-      throw new Error('Swiss phase is not complete yet');
-    }
-
-    const config = db.getConfig();
-    const standings = swissService.getStandings();
-
-    // Top N csapat kiválasztása
-    const qualifiedTeams = standings
-      .slice(0, config.knockoutSize)
-      .map(s => s.team);
-
-    if (qualifiedTeams.length < 2) {
-      throw new Error('Not enough teams for knockout phase');
-    }
-
-    // Bracket generálása
-    const bracket = this.createBracket(qualifiedTeams);
-
-    // Config frissítése
-    db.updateConfig({
-      currentPhase: 'knockout',
-      currentRound: 0
-    });
-
-    return bracket;
+    throw new Error('Knockout phase is not available in round-robin tournament format');
   }
 
   /**

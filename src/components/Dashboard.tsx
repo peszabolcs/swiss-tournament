@@ -39,21 +39,17 @@ export default function Dashboard() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink mb-2">
-          CS2 Swiss Tournament
+          CS2 Round-Robin Tournament
         </h1>
         <p className="text-gray-400 text-lg">Dashboard & Standings</p>
       </div>
 
       {/* Tournament Info */}
       {config && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="card">
             <div className="text-gray-400 text-sm mb-1">Total Teams</div>
             <div className="text-3xl font-bold text-neon-blue">{config.totalTeams}</div>
-          </div>
-          <div className="card">
-            <div className="text-gray-400 text-sm mb-1">Current Phase</div>
-            <div className="text-3xl font-bold text-neon-purple capitalize">{config.currentPhase}</div>
           </div>
           <div className="card">
             <div className="text-gray-400 text-sm mb-1">Current Round</div>
@@ -62,8 +58,8 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="card">
-            <div className="text-gray-400 text-sm mb-1">Knockout Size</div>
-            <div className="text-3xl font-bold text-green-400">Top {config.knockoutSize}</div>
+            <div className="text-gray-400 text-sm mb-1">Format</div>
+            <div className="text-xl font-bold text-neon-purple">Round-Robin</div>
           </div>
         </div>
       )}
@@ -86,7 +82,7 @@ export default function Dashboard() {
                   <th className="py-3 px-4 text-gray-400 font-semibold text-center">Wins</th>
                   <th className="py-3 px-4 text-gray-400 font-semibold text-center">Losses</th>
                   <th className="py-3 px-4 text-gray-400 font-semibold text-center">Round Diff</th>
-                  <th className="py-3 px-4 text-gray-400 font-semibold text-center">Buchholz</th>
+                  <th className="py-3 px-4 text-gray-400 font-semibold text-center">Goals For</th>
                 </tr>
               </thead>
               <tbody>
@@ -94,7 +90,7 @@ export default function Dashboard() {
                   <tr key={standing.team.id} className="table-row">
                     <td className="py-3 px-4">
                       <div className="flex items-center">
-                        {standing.rank <= 4 ? (
+                        {standing.rank <= 3 ? (
                           <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white font-bold">
                             {standing.rank}
                           </span>

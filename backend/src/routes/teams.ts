@@ -27,6 +27,7 @@ router.post('/', (req: Request, res: Response) => {
       id: uuidv4(),
       name: name.trim(),
       totalPoints: 0,
+      totalScored: 0,
       totalWins: 0,
       totalLosses: 0,
       buchholzScore: 0,

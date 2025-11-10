@@ -9,8 +9,8 @@ class Database {
   private matches: Map<string, Match> = new Map();
   private config: TournamentConfig = {
     totalTeams: 0,
-    swissRounds: 4,
-    knockoutSize: 4,
+    swissRounds: 0, // Automatikusan számolódik a csapatok száma alapján
+    knockoutSize: 0, // Már nem használt
     currentRound: 0,
     currentPhase: 'swiss'
   };
@@ -78,23 +78,21 @@ class Database {
   }
 
   /**
-   * Automatikusan kalkulálja az optimális Swiss fordulók számát
-   * MINDIG 4 forduló, függetlenül a csapatok számától
+   * Automatikusan kalkulálja a körmérkőzés fordulóinak számát
+   * n csapat esetén: n-1 forduló (páros csapat) vagy n forduló (páratlan)
    */
   private recalculateSwissRounds(): void {
     const teamCount = this.teams.size;
 
-    // Mindig 4 Swiss forduló
-    this.config.swissRounds = 4;
-
-    // Knockout méret a csapatok számától függ
-    if (teamCount >= 8) {
-      this.config.knockoutSize = 8;
-    } else if (teamCount >= 4) {
-      this.config.knockoutSize = 4;
+    if (teamCount < 2) {
+      this.config.swissRounds = 0;
     } else {
-      this.config.knockoutSize = Math.min(4, teamCount);
+      // Round-robin: n csapat esetén n-1 forduló (ha páros) vagy n (ha páratlan)
+      this.config.swissRounds = teamCount % 2 === 0 ? teamCount - 1 : teamCount;
     }
+
+    // Knockout már nem használt
+    this.config.knockoutSize = 0;
   }
 
   // ===== RESET =====
@@ -104,8 +102,8 @@ class Database {
     this.matches.clear();
     this.config = {
       totalTeams: 0,
-      swissRounds: 4,
-      knockoutSize: 4,
+      swissRounds: 0,
+      knockoutSize: 0,
       currentRound: 0,
       currentPhase: 'swiss'
     };

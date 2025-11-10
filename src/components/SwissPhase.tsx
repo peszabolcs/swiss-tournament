@@ -93,11 +93,14 @@ export default function SwissPhase() {
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple mb-2">
-            Swiss Phase
+            Round-Robin Matches
           </h1>
           <p className="text-gray-400 text-lg">
             Round {config?.currentRound} of {config?.swissRounds}
           </p>
+          {config && config.currentRound >= config.swissRounds && (
+            <p className="text-green-400 text-sm mt-1 font-semibold">Tournament Complete!</p>
+          )}
         </div>
 
         {config && config.currentRound < config.swissRounds && (
@@ -105,7 +108,7 @@ export default function SwissPhase() {
             onClick={handleGenerateRound}
             className="btn-primary"
           >
-            Generate Next Round
+            {config.currentRound === 0 ? 'Start Tournament' : 'Generate Next Round'}
           </button>
         )}
       </div>
@@ -146,7 +149,6 @@ export default function SwissPhase() {
                       value={scores[match.id]?.scoreA || ''}
                       onChange={(e) => handleScoreChange(match.id, 'A', e.target.value)}
                       className="input-field w-24 mt-2"
-                      disabled={match.status === 'completed'}
                     />
                   )}
                 </div>
@@ -174,7 +176,6 @@ export default function SwissPhase() {
                       value={scores[match.id]?.scoreB || ''}
                       onChange={(e) => handleScoreChange(match.id, 'B', e.target.value)}
                       className="input-field w-24 mt-2 text-left"
-                      disabled={match.status === 'completed'}
                     />
                   )}
                 </div>

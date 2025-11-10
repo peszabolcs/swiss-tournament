@@ -4,10 +4,11 @@
 export interface Team {
   id: string;
   name: string;
-  totalPoints: number;      // Összes pont (körök különbsége alapján)
+  totalPoints: number;      // Round különbség (körök különbsége alapján)
+  totalScored: number;      // Összes megszerzett pont (Goals For)
   totalWins: number;         // Győzelmek száma
   totalLosses: number;       // Vereségek száma
-  buchholzScore?: number;    // Tie-breaker: ellenfelek összesített pontszáma
+  buchholzScore?: number;    // Tie-breaker: már nem használt körmérkőzésben
   matchHistory: string[];    // Meccselt csapatok ID-i (ismétlés elkerülésére)
 }
 

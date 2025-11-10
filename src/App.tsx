@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import SwissPhase from './components/SwissPhase';
-import KnockoutBracket from './components/KnockoutBracket';
 import AdminPanel from './components/AdminPanel';
 
 function Navigation() {
@@ -33,24 +32,14 @@ function Navigation() {
               Dashboard
             </Link>
             <Link
-              to="/swiss"
+              to="/matches"
               className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                isActive('/swiss')
+                isActive('/matches')
                   ? 'bg-gradient-to-r from-neon-blue to-neon-purple text-white'
                   : 'text-gray-300 hover:text-white hover:bg-dark-border'
               }`}
             >
-              Swiss Phase
-            </Link>
-            <Link
-              to="/knockout"
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                isActive('/knockout')
-                  ? 'bg-gradient-to-r from-neon-blue to-neon-purple text-white'
-                  : 'text-gray-300 hover:text-white hover:bg-dark-border'
-              }`}
-            >
-              Knockout
+              Matches
             </Link>
             <Link
               to="/admin"
@@ -76,8 +65,7 @@ export default function App() {
         <Navigation />
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/swiss" element={<SwissPhase />} />
-          <Route path="/knockout" element={<KnockoutBracket />} />
+          <Route path="/matches" element={<SwissPhase />} />
           <Route path="/admin" element={<AdminPanel />} />
         </Routes>
       </div>

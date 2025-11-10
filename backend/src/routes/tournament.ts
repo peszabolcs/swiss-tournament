@@ -1,27 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../models/Database.js';
 import { swissService } from '../services/SwissService.js';
-import { knockoutService } from '../services/KnockoutService.js';
 
 const router = Router();
 
 /**
  * POST /api/tournament/generate-round
- * Új Swiss forduló generálása
+ * Új körmérkőzéses forduló generálása
  */
 router.post('/generate-round', (req: Request, res: Response) => {
   try {
     const config = db.getConfig();
 
-    if (config.currentPhase === 'knockout') {
-      return res.status(400).json({
-        error: 'Tournament is already in knockout phase'
-      });
-    }
-
     if (config.currentRound >= config.swissRounds) {
       return res.status(400).json({
-        error: 'All Swiss rounds are completed. Generate bracket instead.'
+        error: 'All rounds are completed. The tournament is finished!'
       });
     }
 
@@ -63,43 +56,22 @@ router.get('/standings', (req: Request, res: Response) => {
 
 /**
  * POST /api/tournament/generate-bracket
- * Knockout bracket generálása
+ * DEPRECATED - Knockout bracket már nem használt körmérkőzéses rendszerben
  */
 router.post('/generate-bracket', (req: Request, res: Response) => {
-  try {
-    const bracket = knockoutService.generateBracket();
-
-    res.json({
-      success: true,
-      bracket
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+  res.status(400).json({
+    error: 'Knockout phase is not available in round-robin tournament format'
+  });
 });
 
 /**
  * GET /api/tournament/bracket
- * Knockout bracket lekérése
+ * DEPRECATED - Knockout bracket már nem használt körmérkőzéses rendszerben
  */
 router.get('/bracket', (req: Request, res: Response) => {
-  try {
-    const bracket = knockoutService.getBracket();
-
-    // Csapat adatok hozzáadása
-    const enrichedBracket = bracket.map(match => ({
-      ...match,
-      teamA: match.teamAId ? db.getTeam(match.teamAId) : null,
-      teamB: match.teamBId ? db.getTeam(match.teamBId) : null
-    }));
-
-    res.json({
-      success: true,
-      bracket: enrichedBracket
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+  res.status(400).json({
+    error: 'Knockout phase is not available in round-robin tournament format'
+  });
 });
 
 /**

@@ -134,4 +134,96 @@ router.post('/result', (req: Request, res: Response) => {
   }
 });
 
+/**
+ * PATCH /api/matches/:id/reroll
+ * Veto és side-choice újra sorsolása (Admin funkció)
+ */
+router.patch('/:id/reroll', (req: Request, res: Response) => {
+  try {
+    const matchId = req.params.id;
+
+    const updatedMatch = swissService.rerollVetoAndSide(matchId);
+
+    // Csapat adatok hozzáadása
+    const teamA = db.getTeam(updatedMatch.teamAId);
+    const teamB = updatedMatch.teamBId !== 'BYE' ? db.getTeam(updatedMatch.teamBId) : null;
+
+    res.json({
+      success: true,
+      match: {
+        ...updatedMatch,
+        teamA,
+        teamB: teamB || { id: 'BYE', name: 'BYE' }
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/matches/:id/veto
+ * Veto lépés végrehajtása
+ *
+ * Body: { bannedMaps?: string[], sideChoice?: 'T' | 'CT' }
+ */
+router.post('/:id/veto', (req: Request, res: Response) => {
+  try {
+    const matchId = req.params.id;
+    const { bannedMaps, sideChoice } = req.body;
+
+    // Step 0-4: Map ban
+    if (bannedMaps !== undefined) {
+      if (!Array.isArray(bannedMaps)) {
+        return res.status(400).json({
+          error: 'bannedMaps must be an array'
+        });
+      }
+      const updatedMatch = swissService.executeVetoStep(matchId, bannedMaps);
+
+      // Csapat adatok hozzáadása
+      const teamA = db.getTeam(updatedMatch.teamAId);
+      const teamB = updatedMatch.teamBId !== 'BYE' ? db.getTeam(updatedMatch.teamBId) : null;
+
+      return res.json({
+        success: true,
+        match: {
+          ...updatedMatch,
+          teamA,
+          teamB: teamB || { id: 'BYE', name: 'BYE' }
+        }
+      });
+    }
+
+    // Step 5: Side choice
+    if (sideChoice !== undefined) {
+      if (sideChoice !== 'T' && sideChoice !== 'CT') {
+        return res.status(400).json({
+          error: 'sideChoice must be "T" or "CT"'
+        });
+      }
+      const updatedMatch = swissService.executeVetoStep(matchId, [], sideChoice);
+
+      // Csapat adatok hozzáadása
+      const teamA = db.getTeam(updatedMatch.teamAId);
+      const teamB = updatedMatch.teamBId !== 'BYE' ? db.getTeam(updatedMatch.teamBId) : null;
+
+      return res.json({
+        success: true,
+        match: {
+          ...updatedMatch,
+          teamA,
+          teamB: teamB || { id: 'BYE', name: 'BYE' }
+        }
+      });
+    }
+
+    return res.status(400).json({
+      error: 'Either bannedMaps or sideChoice is required'
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 export default router;

@@ -157,6 +157,42 @@ class TournamentAPI {
       throw new Error('Failed to reset tournament');
     }
   }
+
+  // ===== VETO & SIDE CHOICE =====
+
+  async rerollVetoAndSide(matchId: string): Promise<Match> {
+    const response = await fetch(`${API_BASE}/matches/${matchId}/reroll`, {
+      method: 'PATCH'
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to reroll veto and side');
+    }
+
+    const data = await response.json();
+    return data.match;
+  }
+
+  async executeVetoStep(matchId: string, bannedMaps?: string[], sideChoice?: 'T' | 'CT'): Promise<Match> {
+    const body: any = {};
+    if (bannedMaps !== undefined) body.bannedMaps = bannedMaps;
+    if (sideChoice !== undefined) body.sideChoice = sideChoice;
+
+    const response = await fetch(`${API_BASE}/matches/${matchId}/veto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to execute veto step');
+    }
+
+    const data = await response.json();
+    return data.match;
+  }
 }
 
 export const api = new TournamentAPI();

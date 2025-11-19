@@ -8,6 +8,23 @@ export interface Team {
   matchHistory: string[];
 }
 
+export interface VetoStep {
+  step: number;
+  team: 'teamA' | 'teamB';
+  action: 'ban' | 'side';
+  count: number;
+  bannedMaps?: string[];
+  sideChoice?: 'T' | 'CT';
+}
+
+export interface VetoProgress {
+  completed: boolean;
+  currentStep: number;
+  availableMaps: string[];
+  bannedMaps: string[];
+  steps: VetoStep[];
+}
+
 export interface Match {
   id: string;
   round: number;
@@ -19,6 +36,13 @@ export interface Match {
   status: 'pending' | 'completed';
   phase: 'swiss' | 'knockout';
   map: string;
+  vetoStarter: 'teamA' | 'teamB';
+  sideChoice: {
+    starter: 'teamA' | 'teamB';
+    side: 'T' | 'CT';
+  };
+  vetoTimestamp?: number;
+  vetoProgress?: VetoProgress;
   teamA?: Team;
   teamB?: Team | { id: string; name: string };
 }

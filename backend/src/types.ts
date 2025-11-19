@@ -13,6 +13,29 @@ export interface Team {
 }
 
 /**
+ * Veto lépés típus
+ */
+export interface VetoStep {
+  step: number;              // Hanyadik lépés (0-5)
+  team: 'teamA' | 'teamB';   // Melyik csapat vétózik
+  action: 'ban' | 'side';    // Akció típusa: ban = map bannolás, side = oldal választás
+  count: number;             // Hány mapot kell bannolni (2 vagy 1) vagy side választás (0)
+  bannedMaps?: string[];     // Ebben a lépésben bannolt mapok
+  sideChoice?: 'T' | 'CT';   // Választott oldal (csak step 5-nél)
+}
+
+/**
+ * Veto progress
+ */
+export interface VetoProgress {
+  completed: boolean;        // Befejeződött-e a veto
+  currentStep: number;       // Jelenlegi lépés (0-5)
+  availableMaps: string[];   // Még választható mapok
+  bannedMaps: string[];      // Összes bannolt map
+  steps: VetoStep[];         // Veto lépések története
+}
+
+/**
  * Meccs típusdefiníció
  */
 export interface Match {
@@ -26,6 +49,13 @@ export interface Match {
   status: 'pending' | 'completed';
   phase: 'swiss' | 'knockout';
   map: string;               // CS2 map (Ancient, Dust2, Inferno, Mirage, Nuke, Overpass, Train)
+  vetoStarter: 'teamA' | 'teamB';  // Melyik csapat kezdi a map veto-t
+  sideChoice: {              // Oldalválasztás információk
+    starter: 'teamA' | 'teamB';  // Melyik csapat választhat először
+    side: 'T' | 'CT';        // Melyik oldalon kezd a starter csapat
+  };
+  vetoTimestamp?: number;    // Veto sorsolás időpontja (logolás céljából)
+  vetoProgress?: VetoProgress; // Veto folyamat állapota
 }
 
 /**

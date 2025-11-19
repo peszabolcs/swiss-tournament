@@ -49,6 +49,12 @@ export class KnockoutService {
 
     // Meccsek mentése az adatbázisba
     bracket.forEach(match => {
+      const vetoStarter = Math.random() < 0.5 ? 'teamA' : 'teamB';
+      const sideChoice = {
+        starter: Math.random() < 0.5 ? 'teamA' : 'teamB' as 'teamA' | 'teamB',
+        side: Math.random() < 0.5 ? 'T' : 'CT' as 'T' | 'CT'
+      };
+
       const dbMatch: Match = {
         id: match.id,
         round: match.position, // A bracket match position tartalmazza a round számot
@@ -59,7 +65,10 @@ export class KnockoutService {
         winnerId: null,
         status: 'pending',
         phase: 'knockout',
-        map: match.map
+        map: match.map,
+        vetoStarter,
+        sideChoice,
+        vetoTimestamp: Date.now()
       };
       db.addMatch(dbMatch);
     });
@@ -147,6 +156,12 @@ export class KnockoutService {
 
     for (let i = 0; i < winners.length; i += 2) {
       if (i + 1 < winners.length) {
+        const vetoStarter = Math.random() < 0.5 ? 'teamA' : 'teamB';
+        const sideChoice = {
+          starter: Math.random() < 0.5 ? 'teamA' : 'teamB' as 'teamA' | 'teamB',
+          side: Math.random() < 0.5 ? 'T' : 'CT' as 'T' | 'CT'
+        };
+
         matches.push({
           id: uuidv4(),
           round,
@@ -157,7 +172,10 @@ export class KnockoutService {
           winnerId: null,
           status: 'pending',
           phase: 'knockout',
-          map: getRandomMap()
+          map: getRandomMap(),
+          vetoStarter,
+          sideChoice,
+          vetoTimestamp: Date.now()
         });
       }
     }

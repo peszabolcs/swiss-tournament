@@ -1,13 +1,42 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Team, Match } from '../types.js';
+import { Team, Match, VetoProgress } from '../types.js';
 import { db } from '../models/Database.js';
 import { getRandomMap } from '../utils/mapPool.js';
+import { CS2_MAP_POOL } from '../utils/mapPool.js';
 
 /**
  * Körmérkőzéses (Round-Robin) párosítási szolgáltatás
  * Mindenki mindenki ellen játszik egyszer
  */
 export class SwissService {
+  /**
+   * Random veto starter generálás (50-50% esély)
+   */
+  private generateVetoStarter(): 'teamA' | 'teamB' {
+    return Math.random() < 0.5 ? 'teamA' : 'teamB';
+  }
+
+  /**
+   * Random side-choice generálás (50-50% esély mindkét paraméterre)
+   */
+  private generateSideChoice(): { starter: 'teamA' | 'teamB'; side: 'T' | 'CT' } {
+    const starter = Math.random() < 0.5 ? 'teamA' : 'teamB';
+    const side = Math.random() < 0.5 ? 'T' : 'CT';
+    return { starter, side };
+  }
+
+  /**
+   * Veto progress inicializálása új meccshez
+   */
+  private initializeVetoProgress(): VetoProgress {
+    return {
+      completed: false,
+      currentStep: 0,
+      availableMaps: [...CS2_MAP_POOL],
+      bannedMaps: [],
+      steps: []
+    };
+  }
   /**
    * Új körmérkőzéses forduló generálása
    *
@@ -80,6 +109,10 @@ export class SwissService {
 
         // Ha mindkét csapat létezik (nem "bye")
         if (teamA && teamB) {
+          const vetoStarter = this.generateVetoStarter();
+          const vetoTimestamp = Date.now();
+          const vetoProgress = this.initializeVetoProgress();
+
           roundMatches.push({
             id: uuidv4(),
             round,
@@ -90,7 +123,14 @@ export class SwissService {
             winnerId: null,
             status: 'pending',
             phase: 'swiss',
-            map: getRandomMap()
+            map: 'TBD', // Veto után kerül kitöltésre
+            vetoStarter,
+            sideChoice: {
+              starter: 'teamA', // Placeholder, veto végén kerül kitöltésre
+              side: 'T'         // Placeholder, veto végén kerül kitöltésre
+            },
+            vetoTimestamp,
+            vetoProgress
           });
         }
       }
@@ -242,6 +282,164 @@ export class SwissService {
       config.currentRound >= config.swissRounds &&
       completedMatches.length === allMatches.length
     );
+  }
+
+  /**
+   * Veto és side-choice újra sorsolása egy meccshez
+   * (Admin funkció)
+   */
+  rerollVetoAndSide(matchId: string): Match {
+    const match = db.getMatch(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    if (match.status === 'completed') {
+      throw new Error('Cannot reroll a completed match');
+    }
+
+    const vetoStarter = this.generateVetoStarter();
+    const sideChoice = this.generateSideChoice();
+    const vetoTimestamp = Date.now();
+    const vetoProgress = this.initializeVetoProgress();
+
+    db.updateMatch(matchId, {
+      vetoStarter,
+      sideChoice,
+      vetoTimestamp,
+      vetoProgress
+    });
+
+    return db.getMatch(matchId)!;
+  }
+
+  /**
+   * Veto lépés végrehajtása
+   *
+   * Veto folyamat:
+   * Step 0: vetoStarter - ban 2 maps (7 → 5)
+   * Step 1: other team - ban 1 map (5 → 4)
+   * Step 2: vetoStarter - ban 1 map (4 → 3)
+   * Step 3: other team - ban 1 map (3 → 2)
+   * Step 4: vetoStarter - ban 1 map (2 → 1)
+   * Step 5: other team - választja T vagy CT
+   * Végeredmény: 1 map marad + side choice
+   */
+  executeVetoStep(matchId: string, bannedMaps: string[], sideChoice?: 'T' | 'CT'): Match {
+    const match = db.getMatch(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    if (match.status === 'completed') {
+      throw new Error('Cannot veto a completed match');
+    }
+
+    if (!match.vetoProgress) {
+      throw new Error('Veto progress not initialized');
+    }
+
+    if (match.vetoProgress.completed) {
+      throw new Error('Veto already completed');
+    }
+
+    const { currentStep, availableMaps, bannedMaps: currentBanned, steps } = match.vetoProgress;
+
+    // Melyik csapat lép
+    const currentTeam = this.getCurrentVetoTeam(match.vetoStarter, currentStep);
+
+    // Step 5: Side choice
+    if (currentStep === 5) {
+      if (!sideChoice) {
+        throw new Error('Side choice (T or CT) is required for step 5');
+      }
+
+      const newSteps = [...steps, {
+        step: currentStep,
+        team: currentTeam,
+        action: 'side' as const,
+        count: 0,
+        sideChoice
+      }];
+
+      const updatedVetoProgress: VetoProgress = {
+        completed: true,
+        currentStep: 5,
+        availableMaps,
+        bannedMaps: currentBanned,
+        steps: newSteps
+      };
+
+      db.updateMatch(matchId, {
+        vetoProgress: updatedVetoProgress,
+        sideChoice: {
+          starter: currentTeam,
+          side: sideChoice
+        }
+      });
+
+      return db.getMatch(matchId)!;
+    }
+
+    // Step 0-4: Map ban
+    const expectedBanCount = currentStep === 0 ? 2 : 1;
+
+    // Validálás
+    if (bannedMaps.length !== expectedBanCount) {
+      throw new Error(`Step ${currentStep} requires exactly ${expectedBanCount} ban(s)`);
+    }
+
+    // Ellenőrizze, hogy a bannolt mapok elérhetők-e
+    for (const map of bannedMaps) {
+      if (!availableMaps.includes(map)) {
+        throw new Error(`Map ${map} is not available for banning`);
+      }
+    }
+
+    // Frissítés
+    const newAvailableMaps = availableMaps.filter(m => !bannedMaps.includes(m));
+    const newBannedMaps = [...currentBanned, ...bannedMaps];
+    const newSteps = [...steps, {
+      step: currentStep,
+      team: currentTeam,
+      action: 'ban' as const,
+      count: expectedBanCount,
+      bannedMaps
+    }];
+
+    const isLastBanStep = currentStep === 4;
+    const finalMap = isLastBanStep && newAvailableMaps.length === 1 ? newAvailableMaps[0] : match.map;
+
+    const updatedVetoProgress: VetoProgress = {
+      completed: false, // Még nem kész, side choice hiányzik
+      currentStep: currentStep + 1,
+      availableMaps: newAvailableMaps,
+      bannedMaps: newBannedMaps,
+      steps: newSteps
+    };
+
+    db.updateMatch(matchId, {
+      vetoProgress: updatedVetoProgress,
+      map: finalMap
+    });
+
+    return db.getMatch(matchId)!;
+  }
+
+  /**
+   * Meghatározza melyik csapat lép a veto folyamatban
+   */
+  private getCurrentVetoTeam(vetoStarter: 'teamA' | 'teamB', step: number): 'teamA' | 'teamB' {
+    const otherTeam = vetoStarter === 'teamA' ? 'teamB' : 'teamA';
+
+    // Step 0: vetoStarter - ban 2
+    // Step 1: other - ban 1
+    // Step 2: vetoStarter - ban 1
+    // Step 3: other - ban 1
+    // Step 4: vetoStarter - ban 1
+    // Step 5: other - choose side
+
+    return step % 2 === 0 ? vetoStarter : otherTeam;
   }
 }
 
